@@ -58,6 +58,7 @@ W = np.zeros((n_features, n_classes))
 b = np.zeros((1, n_classes))
 
 learning_rate = 0.1 # Tasa de aprendizaje
+decay_rate = 0.005
 epocas = 500
 Y_train_oh = one_hot(y_train, n_classes)
 
@@ -76,6 +77,7 @@ for epoca in range(epocas):
     # Actualización de parámetros
     W -= learning_rate * dW
     b -= learning_rate * db
+    learning_rate = learning_rate / (1.0 + decay_rate * epoca) # Decaimiento de la tasa de aprendizaje
 
 # EVALUACIÓN DEL MODELO
 test_scores = np.dot(X_test, W) + b
