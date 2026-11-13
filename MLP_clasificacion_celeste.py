@@ -16,6 +16,13 @@ selected_features = ["u", "g", "r", "i", "z", "redshift"]
 df_subset = df[selected_features].copy() # Copiamos en el subset las características que hemos seleccionado...
 df_subset["class"] = df["class"] # y la clasificación.
 
+df_subset["u_g"] = df_subset["u"] - df_subset["g"] # Añadimos nuevas variables de colores
+df_subset["g_r"] = df_subset["g"] - df_subset["r"]
+df_subset["r_i"] = df_subset["r"] - df_subset["i"]
+df_subset["i_z"] = df_subset["i"] - df_subset["z"]
+
+selected_features = ["u", "g", "r", "i", "z", "redshift", "u_g", "g_r", "r_i", "i_z"] # Actualizamos features
+
 # Primero comprobamos si realmente existen valores nulos en nuestro subset.
 print("\nContamos los valores nulos = ")
 null_counts = df_subset.isnull().sum()
@@ -58,7 +65,6 @@ W = np.zeros((n_features, n_classes))
 b = np.zeros((1, n_classes))
 
 learning_rate = 0.1 # Tasa de aprendizaje
-decay_rate = 0.005
 epocas = 500
 Y_train_oh = one_hot(y_train, n_classes)
 
@@ -77,7 +83,6 @@ for epoca in range(epocas):
     # Actualización de parámetros
     W -= learning_rate * dW
     b -= learning_rate * db
-    learning_rate = learning_rate / (1.0 + decay_rate * epoca) # Decaimiento de la tasa de aprendizaje
 
 # EVALUACIÓN DEL MODELO
 test_scores = np.dot(X_test, W) + b
