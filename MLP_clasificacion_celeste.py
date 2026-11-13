@@ -46,6 +46,9 @@ X_train, X_test, y_train, y_test = train_test_split(X_scaled, y.values, test_siz
 
 
 # FUNCIONES
+def relu(z):
+    return np.maximum(0, z)
+
 def softmax(z):
     # Estabilidad numérica restando el máximo por fila
     exp_z = np.exp(z - np.max(z, axis=1, keepdims=True)) # Le restamos el máximo para no tener overflow por exp altas
@@ -59,33 +62,52 @@ def one_hot(y_labels, num_classes): # Devuelve una matriz identidad tamaño num_
 np.random.seed(42) # Para la reproducibilidad
 n_samples, n_features = X_train.shape # Devuelve una tupla con las dimensiones de la matriz
 n_classes = 3  # Galaxia, estrella, cuásar
+hidden_dim = 4 # Número de neuronas para la capa oculta
 
-# Inicialización de pesos (W) y sesgos o umbrales (b) 
-W = np.zeros((n_features, n_classes))
-b = np.zeros((1, n_classes))
+# Inicialización de pesos (W) y sesgos o umbrales (b) para la Capa Oculta y la Capa de Salida
+W1 = np.random.randn(n_features, hidden_dim) * np.sqrt(2.0 / n_features)
+b1 = np.zeros((1, hidden_dim))
+
+W2 = np.random.randn(hidden_dim, n_classes) * np.sqrt(2.0 / hidden_dim)
+b2 = np.zeros((1, n_classes))
 
 learning_rate = 0.1 # Tasa de aprendizaje
 epocas = 500
 Y_train_oh = one_hot(y_train, n_classes)
 
-print("\nEntrenando la red neuronal con descenso de gradiente aplicando Softmax")
+print("\nEntrenando la red neuronal con descenso de gradiente aplicando Softmax y capa oculta (MLP)")
 
 for epoca in range(epocas):
     # Forward propagation
-    scores = np.dot(X_train, W) + b # Z = XW + b
-    probs = softmax(scores) # Le aplicamos la función de activación
+    Z1 = np.dot(X_train, W1) + b1 # Z1 = XW1 + b1
+    A1 = relu(Z1) # Aplicamos la activación no lineal ReLU
+    
+    scores = np.dot(A1, W2) + b2  # Z2 = A1W2 + b2
+    probs = softmax(scores) # Le aplicamos la función de activación Softmax
 
     # Backpropagation
     error = probs - Y_train_oh
-    dW = (1 / n_samples) * np.dot(X_train.T, error) # La transpuesta para poder realizar el producto 
-    db = (1 / n_samples) * np.sum(error, axis=0, keepdims=True)
+    
+    # Gradientes de la capa de salida
+    dW2 = (1 / n_samples) * np.dot(A1.T, error) # La transpuesta para poder realizar el producto 
+    db2 = (1 / n_samples) * np.sum(error, axis=0, keepdims=True)
+    
+    # Propagación hacia atrás a través de la capa oculta
+    dA1 = np.dot(error, W2.T)
+    dZ1 = dA1 * (Z1 > 0) # Derivada de ReLU
+    dW1 = (1 / n_samples) * np.dot(X_train.T, dZ1)
+    db1 = (1 / n_samples) * np.sum(dZ1, axis=0, keepdims=True)
 
     # Actualización de parámetros
-    W -= learning_rate * dW
-    b -= learning_rate * db
+    W1 -= learning_rate * dW1
+    b1 -= learning_rate * db1
+    W2 -= learning_rate * dW2
+    b2 -= learning_rate * db2
 
 # EVALUACIÓN DEL MODELO
-test_scores = np.dot(X_test, W) + b
+test_Z1 = np.dot(X_test, W1) + b1
+test_A1 = relu(test_Z1)
+test_scores = np.dot(test_A1, W2) + b2
 test_probs = softmax(test_scores)
 y_pred = np.argmax(test_probs, axis=1) # Para devolver la clase con porcentaje mayor
 
